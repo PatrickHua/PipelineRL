@@ -35,7 +35,12 @@ def get_optimizer(name, model, learning_rate, weight_decay):
                 scale_parameter=False,
             )
         case "cpuadam":
-            import deepspeed.ops.adam
+            try:
+                import deepspeed.ops.adam
+            except ImportError as e:
+                raise ImportError(
+                    "deepspeed is required for cpuadam optimizer. Install it with: pip install 'pipelinerl[gpu]'"
+                ) from e
 
             optimizer = deepspeed.ops.adam.DeepSpeedCPUAdam(grouped_params, lr=learning_rate)
         case "lion":

@@ -2,26 +2,32 @@ import logging
 import signal
 import torch
 import uvloop
-from vllm.utils import FlexibleArgumentParser, set_ulimit
-from vllm.entrypoints.openai.cli_args import (
-    make_arg_parser,
-    validate_parsed_serve_args,
-)
-from vllm.entrypoints.launcher import serve_http
-from vllm.entrypoints.openai.api_server import (
-    run_server,
-    create_server_socket,
-    build_app,
-    init_app_state,
-)
-from vllm.engine.arg_utils import AsyncEngineArgs
-from vllm.entrypoints.openai.tool_parsers import ToolParserManager
-from vllm._version import version
-from vllm.usage.usage_lib import UsageContext
-from vllm.config import ModelConfig
-from vllm.v1.engine.async_llm import AsyncLLM
-from vllm.v1.engine.core_client import AsyncMPClient
-from vllm.v1.worker.gpu_model_runner import GPUModelRunner
+
+try:
+    from vllm.utils import FlexibleArgumentParser, set_ulimit
+    from vllm.entrypoints.openai.cli_args import (
+        make_arg_parser,
+        validate_parsed_serve_args,
+    )
+    from vllm.entrypoints.launcher import serve_http
+    from vllm.entrypoints.openai.api_server import (
+        run_server,
+        create_server_socket,
+        build_app,
+        init_app_state,
+    )
+    from vllm.engine.arg_utils import AsyncEngineArgs
+    from vllm.entrypoints.openai.tool_parsers import ToolParserManager
+    from vllm._version import version
+    from vllm.usage.usage_lib import UsageContext
+    from vllm.config import ModelConfig
+    from vllm.v1.engine.async_llm import AsyncLLM
+    from vllm.v1.engine.core_client import AsyncMPClient
+    from vllm.v1.worker.gpu_model_runner import GPUModelRunner
+except ImportError as e:
+    raise ImportError(
+        "vllm is required for this module. Install it with: pip install 'pipelinerl[gpu]'"
+    ) from e
 
 
 from pipelinerl.finetune_loop import WeightUpdateRequest

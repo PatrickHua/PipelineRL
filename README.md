@@ -194,11 +194,34 @@ cd PipelineRL
 ```
 
 Create the environments with dependencies.
+
+### CPU-only Installation (for development on Mac/Linux without GPU)
+
+For development purposes on machines without CUDA GPUs, you can install PipelineRL without GPU-specific dependencies (vllm, deepspeed, flash-attn):
+
 ```bash
 conda create -n pipeline-rl -y python=3.11
 conda run --no-capture-output -n pipeline-rl pip install torch==2.6.0 
 conda run --no-capture-output -n pipeline-rl pip install -e . --no-build-isolation
 ```
+
+Note: This installation will skip GPU-specific packages. GPU-dependent features (like running vLLM inference servers or using DeepSpeed) will not be available.
+
+### GPU Installation (for training with CUDA GPUs)
+
+For full functionality including GPU-accelerated inference and training, install with GPU dependencies:
+
+```bash
+conda create -n pipeline-rl -y python=3.11
+conda run --no-capture-output -n pipeline-rl pip install torch==2.6.0 
+conda run --no-capture-output -n pipeline-rl pip install -e .[gpu] --no-build-isolation
+```
+
+This will install all dependencies including:
+- `vllm==0.8.5.post1` - For GPU-accelerated inference servers
+- `deepspeed==0.15.4` - For distributed training
+- `flash-attn==2.7.4.post1` - For optimized attention
+- `ring-flash-attn==0.1.6` - For sequence parallelism
 
 By default Pipeline-RL will use the file system as the medium for streaming the generated data to the trainer processes. This works on one node, but the files can get quite large. To use Redis instead you will need to install the Redis server in the same conda environment:
 ```bash

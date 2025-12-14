@@ -34,3 +34,6 @@ world:
 
 eval_every_n_versions: 20000
 model_path: Qwen/Qwen2.5-0.5B-Instruct
+
+wandb:
+  wandb_workspace_root: null

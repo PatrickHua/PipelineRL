@@ -13,7 +13,11 @@ from pathlib import Path
 from queue import Empty, Queue
 from typing import Any, Dict, List, Literal
 
-import deepspeed
+try:
+    import deepspeed
+except ImportError:
+    deepspeed = None  # type: ignore
+
 import requests
 import torch
 import torch.distributed as dist
@@ -24,7 +28,12 @@ from torch.distributed.fsdp import FullStateDictConfig, StateDictType
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp.api import MixedPrecision
 from transformers import PreTrainedTokenizerFast, get_scheduler, set_seed
-from ring_flash_attn import substitute_hf_flash_attn, update_ring_flash_attn_params
+
+try:
+    from ring_flash_attn import substitute_hf_flash_attn, update_ring_flash_attn_params
+except ImportError:
+    substitute_hf_flash_attn = None  # type: ignore
+    update_ring_flash_attn_params = None  # type: ignore
 
 from pipelinerl.finetune.value_model import AutoModelForCausalLMWithValueHead
 import pipelinerl.torch_utils
@@ -186,7 +195,8 @@ class WeightUpdateManager:
         version: int,
     ):
         if (
-            isinstance(self.accelerated_model, deepspeed.DeepSpeedEngine)
+            deepspeed is not None
+            and isinstance(self.accelerated_model, deepspeed.DeepSpeedEngine)
             and self.accelerated_model.zero_optimization_stage() == 3
         ):
             module = self.accelerated_model.module
@@ -474,7 +484,12 @@ def run_finetuning_loop(
             if get_accelerator().process_index in group_ranks:
                 seq_parallel_group = group
         assert seq_parallel_group is not None
-        substitute_hf_flash_attn(seq_parallel_group, heads_k_stride=1)
+        if substitute_hf_flash_attn is not None:
+            substitute_hf_flash_attn(seq_parallel_group, heads_k_stride=1)
+        else:
+            raise ImportError(
+                "ring-flash-attn is required for sequence parallelism. Install it with: pip install 'pipelinerl[gpu]'"
+            )
 
     try:
         logger.info("Start training")
@@ -632,7 +647,7 @@ def rl_finetuning_worker(
         assert total_samples_overcounted % args.seq_parallel == 0
         total_samples = total_samples_overcounted // args.seq_parallel
         do_optimizer_step = total_samples == target_samples
-        using_deepspeed = isinstance(model, deepspeed.DeepSpeedEngine)
+        using_deepspeed = deepspeed is not None and isinstance(model, deepspeed.DeepSpeedEngine)
 
         def backward(loss, is_final_micro_batch=False):
             """Perform backward pass with appropriate gradient accumulation boundary"""
@@ -677,7 +692,12 @@ def rl_finetuning_worker(
             # Choose RL step function based on seq_packing config
             if seq_parallel_group is not None:
                 assert batch.seq_boundaries is not None
-                update_ring_flash_attn_params(batch.seq_boundaries, seq_parallel_group)
+                if update_ring_flash_attn_params is not None:
+                    update_ring_flash_attn_params(batch.seq_boundaries, seq_parallel_group)
+                else:
+                    raise ImportError(
+                        "ring-flash-attn is required for sequence parallelism. Install it with: pip install 'pipelinerl[gpu]'"
+                    )
             loss, this_step_rl_metrics = rl_step(
                 model,
                 batch,
