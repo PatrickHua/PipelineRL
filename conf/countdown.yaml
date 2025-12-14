@@ -1,0 +1,36 @@
+defaults:
+    - base
+    - _self_
+finetune:
+    seq_length: 4000
+    gradient_accumulation_passes: 1024
+    save_checkpoint_steps: 1000
+llm:
+    parameters:
+        max_tokens: 500
+test_llm:
+    parameters:
+        max_tokens: 500
+vllm_config:
+    vllm_kwargs:
+        max_model_len: 4000  # Match seq_length for countdown task
+actor:
+  rollout_policy: pipelinerl.domains.countdown.generate_countdown_rollout
+  system_prompt: Please reason step by step, and put your final answer within \boxed{}.
+  task_template: |-
+    {task}
+environment: null
+
+dataset_loader: pipelinerl.domains.countdown.load_problems
+train_dataset_names:
+  - train
+test_dataset_names:
+  - test
+
+world:
+  actor_fraction: 1    # 1 GPU for vLLM inference (sampling)
+  preprocessor_fraction: 0
+  finetune_fraction: 1  # 1 GPU for training
+
+eval_every_n_versions: 20000
+model_path: Qwen/Qwen2.5-0.5B-Instruct
