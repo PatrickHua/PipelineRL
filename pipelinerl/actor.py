@@ -649,8 +649,15 @@ def run_actor_loop(cfg: DictConfig):
         trainer_state.wait_for_model_version()
 
     train_loop = ActorLoop(
-        data_stream=data_stream, cfg=cfg, trainer_state=trainer_state, stats_stream=stats_stream, llms=train_llms
+        data_stream=data_stream,
+        cfg=cfg,
+        trainer_state=trainer_state,
+        stats_stream=stats_stream,
+        llms=train_llms,
+        is_training=True,
     )
+    
+    # Create the training loop generator
     train_loop_run = train_loop.run(
         dataset=train_dataset,
     )
@@ -662,6 +669,7 @@ def run_actor_loop(cfg: DictConfig):
         llms=test_llms,
         is_training=False,
     )
+    # Delay the test loop until the training loop is finished
     test_loop_run = None
 
     last_regular_eval = -1
@@ -676,13 +684,17 @@ def run_actor_loop(cfg: DictConfig):
             else last_regular_eval + cfg.eval_every_n_versions
         )
         if (
-            cfg.eval_every_n_versions
-            and not cfg.debug.mode
-            and trainer_state.propagated_weight_version >= next_regular_eval
-            and test_dataset
-            and test_loop_run is None
+            cfg.eval_every_n_versions  # Eval is enabled (non-zero interval or 0 for immediate eval)
+            and not cfg.debug.mode  # Not in debug mode (debug mode handles eval differently)
+            and trainer_state.propagated_weight_version >= next_regular_eval  # Current model version has reached the eval trigger point
+            and test_dataset  # Test dataset exists and is not empty
+            and test_loop_run is None  # Test loop is not already running
         ):
             logger.info("Create test loop")
+            # Create the test loop generator. This will:
+            # - Process all test problems sequentially (one attempt per problem)
+            # - Collect metrics (success, reward, etc.) from rollouts
+            # - Publish stats to wandb when all rollouts complete
             test_loop_run = test_loop.run(
                 dataset=test_dataset,
             )
