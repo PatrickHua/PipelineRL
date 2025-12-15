@@ -7,7 +7,8 @@ NODE=${1:-1}
 SSH_OPTS="-J tyhua@scdt.stanford.edu -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -o ConnectTimeout=10"
 
 # Sync files
-rsync -avz -e "ssh $SSH_OPTS" --exclude '.git' --exclude '__pycache__' --exclude '*.pyc' --exclude '.DS_Store' /Users/tianyu/Work/PipelineRL/ tyhua@node${NODE}-ccn2cluster.stanford.edu:/ccn2/u/tyhua/PipelineRL/
+# --delete removes files on destination that don't exist on source
+rsync -avz --delete -e "ssh $SSH_OPTS" --exclude '.git' --exclude '__pycache__' --exclude '*.pyc' --exclude '.DS_Store' /Users/tianyu/Work/PipelineRL/ tyhua@node${NODE}-ccn2cluster.stanford.edu:/ccn2/u/tyhua/PipelineRL/
 
 # Only SSH if rsync succeeded
 if [ $? -eq 0 ]; then

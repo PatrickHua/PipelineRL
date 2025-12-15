@@ -17,7 +17,25 @@ vllm_config:
 actor:
   rollout_policy: pipelinerl.domains.puzzle.multiply.generate_multiply_rollout
   system_prompt: null
-  task_template: null
+  task_template: |-
+    import re
+
+    def multiply_game(response: str) -> float:
+        """this defines the environment for the multiply game and returns the reward [0, 1]"""
+
+        a = {a}
+        b = {b}
+        try:
+            expression = int(re.search(r'<answer>(.*?)</answer>', response).group(1))
+        except Exception:
+            return 0
+        
+        if expression == a * b:
+            return 1
+        else:
+            return 0.1
+  reward_function: multiply_game
+
 
 environment: null
 
